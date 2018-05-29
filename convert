@@ -1,0 +1,93 @@
+#!/bin/bash
+########################################################################
+#
+#
+#                       script: convert
+#                           by: Dan Purgert    
+#                    copyright: 2018
+#                      version: 0.1
+#                         date: Tue, 29 May 2018 07:56:32 -0400
+#                      purpose: Quick and dirty ffmpeg conversion 
+#                             : script.  Probably useless for everyone.
+#
+#                      license: GPL v2 (only)
+#                   repository: http://github.com/dpurgert
+#
+#######################################################################
+
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 2
+#of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+#02110-1301, USA.
+
+if [ $# -lt 3 ] || [ $1 = "-h" ]; then
+  printf "  
+  convert
+  ---------
+  convert file(s) from the provided input directory into mp3
+  and place them into the output directory.
+  
+  Options:
+   -h    Print this help text and exit
+  
+  Usage:
+  convert </input/path> </output/path> <file ext>
+  
+  ---------\n"
+
+  if [ $# -lt 3 ];then 
+    exit 1
+  else
+    exit 0
+  fi
+fi
+
+if [ ! -d $1 ]; then
+  printf "Input path \"${1}\" invalid.\n"
+  exit 1
+fi
+
+if [ ! -d $2 ]; then
+  printf "output path \"${2}\" invalid.\n"
+  exit 1
+fi
+
+#die function to handle failed cd
+die() {
+  printf "An error occurred while running.  Exiting."
+  exit 1
+}
+
+#spinner because this might take a while
+spinner() {
+  local pid=$1
+  local del=0.5
+  local sp='/-\|'
+  local n=${#sp}
+  printf ' '
+  while [ $(ps a | awk '{print $1}' | grep $pid) ] ; do
+        printf '\b%s' "${sp:i++%n:1}"
+        sleep $del
+  done
+  printf "\n"
+}
+
+cd "$1" || die
+
+printf "Converting all $3 files in $1 to ${2}/filename.mp3\n"
+
+$(for f in *"$3"; do \
+  ffmpeg -i "$f" -acodec libmp3lame -ac 2 -ab 128k \
+  "${2}/${f%%.${3}}.mp3"; done) & spinner $!
+
+printf "Conversion complete.\n"
